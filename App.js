@@ -1,114 +1,146 @@
-/**
- * Sample React Native App
- * https://github.com/facebook/react-native
- *
- * @format
- * @flow
- */
-
-import React from 'react';
+import React, {Component} from 'react';
 import {
-  SafeAreaView,
   StyleSheet,
-  ScrollView,
   View,
   Text,
   StatusBar,
+  PermissionsAndroid,
+  Platform,
+  Image,
+  TouchableOpacity,
+  ImageBackground,
 } from 'react-native';
 
-import {
-  Header,
-  LearnMoreLinks,
-  Colors,
-  DebugInstructions,
-  ReloadInstructions,
-} from 'react-native/Libraries/NewAppScreen';
+import Geolocation from 'react-native-geolocation-service';
 
-const App: () => React$Node = () => {
-  return (
-    <>
-      <StatusBar barStyle="dark-content" />
-      <SafeAreaView>
-        <ScrollView
-          contentInsetAdjustmentBehavior="automatic"
-          style={styles.scrollView}>
-          <Header />
-          {global.HermesInternal == null ? null : (
-            <View style={styles.engine}>
-              <Text style={styles.footer}>Engine: Hermes</Text>
-            </View>
-          )}
-          <View style={styles.body}>
-            <View style={styles.sectionContainer}>
-              <Text style={styles.sectionTitle}>Step One</Text>
-              <Text style={styles.sectionDescription}>
-                Edit <Text style={styles.highlight}>App.js</Text> to change this
-                screen and then come back to see your edits.
+
+
+export default class App extends Component {
+
+  constructor(props) {
+    super(props)
+    this.state = {};
+    this.requestLocationPermissionAndroid = this.requestLocationPermissionAndroid.bind(this);
+    this.getLocation = this.getLocation.bind(this);
+    this.getWeatherStats = this.getWeatherStats.bind(this)
+
+    if(Platform.OS === 'android') {
+      this.requestLocationPermissionAndroid();
+    }
+    else {
+      this.getLocation();
+    }
+  }
+
+  async requestLocationPermissionAndroid() {
+    try {
+      const granted = await PermissionsAndroid.request(
+        PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+        {
+          title: 'Simple Weather App Location Permission',
+          message:
+            'Simple Weather App would like to access your location to give you the best up-to-date weather data.',
+          buttonNeutral: 'Ask Me Later',
+          buttonNegative: 'Cancel',
+          buttonPositive: 'OK',
+        },
+      );
+      if (granted === PermissionsAndroid.RESULTS.GRANTED) {
+        this.getLocation()
+      } else {
+        console.log('Camera permission denied');
+      }
+    } catch (err) {
+      console.warn(err);
+    }
+  }
+
+  getLocation() {
+    Geolocation.getCurrentPosition(
+        (position) => {
+            console.log(position)
+            this.setState({ latitude: position.coords.latitude, longitude: position.coords.longitude })
+            this.getWeatherStats()
+        },
+        (error) => {
+            // See error code charts below.
+            console.log(error.code, error.message);
+        },
+        { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 }
+    );
+  }
+
+  getWeatherStats() {
+    fetch("https://api.openweathermap.org/data/2.5/weather?" +
+            "lat=" + this.state.latitude +
+            "&lon=" + this.state.longitude +
+            "&appid=1d4481348a33b6386e1b0b4c84e27733")
+        .then(response => response.json())
+        .then(response => {
+            var kelvToFahr = kel => ((kel - 273.15) * (9/5) + 32).toFixed(1)
+            farTemp = kelvToFahr(response.main.temp)
+            iconLink = "http://openweathermap.org/img/wn/" + response.weather[0].icon + "@2x.png"
+            cityName = response.name
+
+
+            this.setState(
+              {
+                temp: farTemp,
+                icon: iconLink,
+                city: cityName
+                }
+            )
+            console.log("Success: " + JSON.stringify(response))
+          })
+        .catch(error => console.error(error))
+  }
+
+
+  render() {
+    console.log(this.state.icon);
+    return (
+      <>
+        <StatusBar hidden />
+        <ImageBackground source = {{uri: "https://i.pinimg.com/originals/1b/2d/cc/1b2dcca3ecb2223b1e5b88f10c35262f.jpg"}} style = {{width: '100%', height: '100%'}}>
+          <TouchableOpacity onPress = {() => this.getLocation()}>
+            <Image style = {{width: 65, height: 65}} source = {{uri: "https://cdn2.iconfinder.com/data/icons/arrows-set-1/512/39-512.png"}}/>
+          </TouchableOpacity>
+
+          <View style = {styles.container}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-around' }}>
+              <Image style = {{width: 30, height: 30, marginRight: 15}} source = {{uri: "https://image.flaticon.com/icons/png/512/67/67872.png"}} />
+              <Text style = {styles.city}>
+                {this.state.city}
               </Text>
             </View>
-            <View style={styles.sectionContainer}>
-              <Text style={styles.sectionTitle}>See Your Changes</Text>
-              <Text style={styles.sectionDescription}>
-                <ReloadInstructions />
-              </Text>
-            </View>
-            <View style={styles.sectionContainer}>
-              <Text style={styles.sectionTitle}>Debug</Text>
-              <Text style={styles.sectionDescription}>
-                <DebugInstructions />
-              </Text>
-            </View>
-            <View style={styles.sectionContainer}>
-              <Text style={styles.sectionTitle}>Learn More</Text>
-              <Text style={styles.sectionDescription}>
-                Read the docs to discover what to do next:
-              </Text>
-            </View>
-            <LearnMoreLinks />
+
+            <Image style = {{width: 200, height: 200, marginBottom: -50}} source={{uri: this.state.icon}} />
+            <Text style = {styles.temp}>{this.state.temp}</Text>
           </View>
-        </ScrollView>
-      </SafeAreaView>
-    </>
-  );
+        </ImageBackground>
+      </>
+    );
+  }
 };
 
 const styles = StyleSheet.create({
-  scrollView: {
-    backgroundColor: Colors.lighter,
-  },
-  engine: {
-    position: 'absolute',
-    right: 0,
-  },
-  body: {
-    backgroundColor: Colors.white,
-  },
-  sectionContainer: {
-    marginTop: 32,
-    paddingHorizontal: 24,
-  },
-  sectionTitle: {
-    fontSize: 24,
-    fontWeight: '600',
-    color: Colors.black,
-  },
-  sectionDescription: {
-    marginTop: 8,
-    fontSize: 18,
-    fontWeight: '400',
-    color: Colors.dark,
-  },
-  highlight: {
-    fontWeight: '700',
-  },
-  footer: {
-    color: Colors.dark,
-    fontSize: 12,
-    fontWeight: '600',
-    padding: 4,
-    paddingRight: 12,
-    textAlign: 'right',
-  },
+  container: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center'
+ },
+ containerRow: {
+   flex: 1,
+   alignItems: 'center',
+   justifyContent: 'center',
+   flexDirection: 'row'
+ },
+ temp: {
+   fontSize: 100,
+   color: "#f8f9fa",
+ },
+ city: {
+   fontSize: 20,
+   color: "#f8f9fa"
+ }
 });
-
-export default App;
