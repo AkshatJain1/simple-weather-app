@@ -28,5 +28,6 @@ I recommend running on an android device because all development and testing was
 2. Download/Install JDK 8 @ https://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html
 3. Open command line in project folder
 4. Run 'npm install'
+4. Connect Android phone to computer (via USB)
 5. Run 'react-native run-android'
 
