@@ -5,3 +5,4 @@ Well here is Simple Weather App to solve all your problems! Simply launch the ap
 
 Here's an image of what it looks like:
 
+![Screenshot](Screenshot_20191107-020842.jpg)
